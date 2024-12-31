@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Tracking</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    form {
+      max-width: 500px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    select, input, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+      margin-top: 30px;
+    }
+    .refresh-button {
+      margin: 20px auto;
+      display: block;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Money Tracking</h1>
+  <form id="expenseForm">
+    <select id="category" required></select>
+    <input type="number" id="amount" placeholder="Amount" required min="0.01" step="0.01">
+    <input type="text" id="description" placeholder="Description" required>
+    <button type="submit">Add Expense</button>
+  </form>
+  <button class="refresh-button" onclick="refreshDashboard()">Refresh Dashboard</button>
+  <iframe id="dashboard" src="https://lookerstudio.google.com/embed/reporting/YOUR_LOOKER_STUDIO_ID"></iframe>
+
+  <script>
+    const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+
+    // Fetch categories on page load
+    async function fetchCategories() {
+      try {
+        const response = await fetch(`${scriptURL}?action=getCategories`);
+        const data = await response.json();
+        const categorySelect = document.getElementById('category');
+        data.categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category;
+          option.textContent = category;
+          categorySelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    }
+
+    // Handle form submission
+    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const category = document.getElementById('category').value;
+      const amount = document.getElementById('amount').value;
+      const description = document.getElementById('description').value;
+
+      const expenseData = {
+        sheetName: 'Expenses',
+        category,
+        amount: parseFloat(amount),
+        description
+      };
+
+      try {
+        const response = await fetch(scriptURL, {
+          method: 'POST',
+          body: JSON.stringify(expenseData)
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert('Expense added successfully!');
+          e.target.reset(); // Clear form
+        } else {
+          alert('Failed to add expense.');
+        }
+      } catch (error) {
+        console.error('Error adding expense:', error);
+      }
+    });
+
+    // Refresh Looker Studio Dashboard
+    function refreshDashboard() {
+      const dashboard = document.getElementById('dashboard');
+      dashboard.src = dashboard.src; // Reload iframe
+    }
+
+    // Load categories on page load
+    fetchCategories();
+  </script>
+</body>
+</html>
